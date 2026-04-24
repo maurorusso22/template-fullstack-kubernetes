@@ -1,6 +1,6 @@
 # Implementation Plan: template-fullstack-kubernetes
 
-## Context
+## Project Summary
 
 ### Goal
 Boosha needs a standardized, reusable template for fullstack projects — a Python backend API paired with a React frontend SPA — deployed on Kubernetes via Helm. Any new fullstack project that targets Kubernetes should be bootstrapped from this template with working CI/CD, hardened Docker images, a production-ready Helm chart, pre-commit hooks, and security scanning — out of the box.
