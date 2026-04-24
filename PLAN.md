@@ -1800,6 +1800,9 @@ act push --container-architecture linux/amd64 --secret-file .secrets
 ### Type
 ci
 
+### Script-Skip
+true
+
 ### What
 Push the pipeline to GitHub, verify all jobs pass on a PR, and validate the `push` job on `main`. This chapter covers GitHub-specific setup only — the pipeline has already been verified locally with `act` (Chapter 8).
 
@@ -1902,6 +1905,9 @@ Manually verify:
 ### Type
 chore
 
+### Script-Skip
+true
+
 ### What
 Configure GitHub branch protection rules on `main` so direct pushes are blocked and every change goes through a PR with green CI.
 
@@ -1955,6 +1961,9 @@ git push --force origin main
 
 ### Type
 chore
+
+### Script-Skip
+true
 
 ### What
 Add a git submodule pointing to a private repository for internal documentation. Identical to the approach in both standalone templates.
