@@ -153,11 +153,13 @@ template-fullstack-kubernetes/
 
 ---
 
-## Implementation Steps
+## Chapter 1: Backend — Project Scaffolding
 
-### Step 1: Backend — Project Scaffolding
+### Type
+feat
 
-**What:** Create the backend application inside `backend/`. This is parallel to template-backend-python Step 1, with one critical addition: **CORS middleware** so the frontend (running on a different origin in development) can call the API.
+### What
+Create the backend application inside `backend/`. This is parallel to template-backend-python Step 1, with one critical addition: **CORS middleware** so the frontend (running on a different origin in development) can call the API.
 
 **Files to create:**
 - `backend/.gitignore`
@@ -208,7 +210,7 @@ Must go beyond a hello-world. It must demonstrate:
 - Use `fastapi.testclient.TestClient` (backed by `httpx`)
 - Tests must exercise the CRUD round-trip: create an item, then fetch it by the returned id and verify the data matches
 
-#### Verification
+### Verification
 ```bash
 # All commands run from backend/
 
@@ -241,9 +243,13 @@ uv run uvicorn src.main:app --reload
 
 ---
 
-### Step 2: Frontend — Project Scaffolding
+## Chapter 2: Frontend — Project Scaffolding
 
-**What:** Create the frontend application inside `frontend/`. This is parallel to template-frontend-react Steps 1–3 (config + pages + tests), with the critical difference that the **Items page fetches data from the backend API** instead of keeping state in-memory. This is what makes the template genuinely fullstack.
+### Type
+feat
+
+### What
+Create the frontend application inside `frontend/`. This is parallel to template-frontend-react Steps 1–3 (config + pages + tests), with the critical difference that the **Items page fetches data from the backend API** instead of keeping state in-memory. This is what makes the template genuinely fullstack.
 
 **Files to create:**
 - `frontend/.gitignore`
@@ -411,7 +417,7 @@ uv run uvicorn src.main:app --reload
 
 All tests use `@testing-library/react` + `@testing-library/user-event`. Components wrapped in `<MemoryRouter>` for React Router context.
 
-#### Verification
+### Verification
 ```bash
 # All commands run from frontend/
 
@@ -445,9 +451,13 @@ pnpm dev
 
 ---
 
-### Step 3: Backend Dockerfile
+## Chapter 3: Backend Dockerfile
 
-**What:** Create a production-ready, hardened Dockerfile for the backend inside `backend/`. Parallel to template-backend-python Step 2.
+### Type
+build
+
+### What
+Create a production-ready, hardened Dockerfile for the backend inside `backend/`. Parallel to template-backend-python Step 2.
 
 **Files:**
 - `backend/Dockerfile`
@@ -461,7 +471,7 @@ pnpm dev
 
 **Requirements:**
 
-1. **Digest SHA base image pinning** — e.g., `python:3.12.13-slim@sha256:<digest>` (multi-arch manifest list digest, not platform-specific). The human-readable tag stays for readability, the `@sha256:` suffix is what Docker resolves. Dependabot (Step 12) with `package-ecosystem: docker` opens PRs when a new digest is available.
+1. **Digest SHA base image pinning** — e.g., `python:3.12.13-slim@sha256:<digest>` (multi-arch manifest list digest, not platform-specific). The human-readable tag stays for readability, the `@sha256:` suffix is what Docker resolves. Dependabot (Chapter 12) with `package-ecosystem: docker` opens PRs when a new digest is available.
 
 2. **Digest SHA uv image pinning** — Same approach for `ghcr.io/astral-sh/uv`: pin to a specific version tag + digest SHA (not `:latest`).
 
@@ -470,7 +480,7 @@ pnpm dev
    - `PYTHONUNBUFFERED=1` — Unbuffered stdout/stderr for proper logging
    - `VIRTUAL_ENV=/app/.venv` + `PATH` — Explicit venv path, avoids relying on implicit `.venv` location
 
-4. **Non-root user** — Create a dedicated user `appuser` (UID 1000) and switch to it before CMD. Required for the Helm chart's `runAsNonRoot: true` (Step 6). Follows the Principle of Least Privilege: a container escape no longer gives root on the host.
+4. **Non-root user** — Create a dedicated user `appuser` (UID 1000) and switch to it before CMD. Required for the Helm chart's `runAsNonRoot: true` (Chapter 6). Follows the Principle of Least Privilege: a container escape no longer gives root on the host.
 
 5. **File ownership** — `COPY --from=builder --chown=appuser:appuser /app /app` so files are owned by the non-root user, not root.
 
@@ -486,7 +496,7 @@ pnpm dev
 
 **Note on OS vulnerabilities:** `apt-get upgrade` patches CVEs but breaks reproducibility (same Dockerfile produces different images over time, defeating digest pinning). Preferred approach: let Dependabot bump the base image digest via PR.
 
-#### Verification
+### Verification
 ```bash
 # All commands run from repo root
 
@@ -521,9 +531,13 @@ docker rmi template-fullstack-backend
 
 ---
 
-### Step 4: Frontend Dockerfile
+## Chapter 4: Frontend Dockerfile
 
-**What:** Create a production-ready, hardened Dockerfile for the frontend inside `frontend/`, plus the nginx configuration that serves the SPA and reverse-proxies API calls to the backend. Parallel to template-frontend-react Step 4.
+### Type
+build
+
+### What
+Create a production-ready, hardened Dockerfile for the frontend inside `frontend/`, plus the nginx configuration that serves the SPA and reverse-proxies API calls to the backend. Parallel to template-frontend-react Step 4.
 
 **Files:**
 - `frontend/Dockerfile`
@@ -538,7 +552,7 @@ docker rmi template-fullstack-backend
 
 **Requirements:**
 
-1. **Digest-pinned base images** — e.g., `node:22-slim@sha256:<digest>` for the builder, `nginx:stable-alpine@sha256:<digest>` for the runtime. Dependabot (Step 12) opens PRs when new digests are available.
+1. **Digest-pinned base images** — e.g., `node:22-slim@sha256:<digest>` for the builder, `nginx:stable-alpine@sha256:<digest>` for the runtime. Dependabot (Chapter 12) opens PRs when new digests are available.
 
 2. **pnpm installation in builder:**
    - Enable corepack: `corepack enable` (ships with Node 22, manages pnpm version from `package.json`'s `packageManager` field)
@@ -561,7 +575,7 @@ docker rmi template-fullstack-backend
    - nginx on Alpine runs as `nginx` user (UID 101) when configured properly
    - `nginx.conf` uses `listen 8080` (unprivileged port), writes pid to `/tmp/nginx.pid`, logs to stdout/stderr
    - Switch to `USER nginx` before CMD
-   - Satisfies Kubernetes `runAsNonRoot: true` policies (Step 6)
+   - Satisfies Kubernetes `runAsNonRoot: true` policies (Chapter 6)
 
 7. **HEALTHCHECK:**
    - `HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 CMD wget -qO- http://localhost:8080/health || exit 1`
@@ -615,7 +629,7 @@ server {
 ```
 
 Key decisions:
-- **`/api/` reverse proxy** (`proxy_pass http://backend:8000/`) — the critical fullstack piece. In Kubernetes, `backend` resolves to the backend Service via DNS. In Docker Compose, `backend` resolves to the backend container via Docker networking. The trailing `/` in `proxy_pass` strips the `/api/` prefix: a request to `/api/items` becomes `/items` on the backend. This matches the Vite dev proxy behavior from Step 2.
+- **`/api/` reverse proxy** (`proxy_pass http://backend:8000/`) — the critical fullstack piece. In Kubernetes, `backend` resolves to the backend Service via DNS. In Docker Compose, `backend` resolves to the backend container via Docker networking. The trailing `/` in `proxy_pass` strips the `/api/` prefix: a request to `/api/items` becomes `/items` on the backend. This matches the Vite dev proxy behavior from Chapter 2.
 - **SPA fallback** (`try_files $uri $uri/ /index.html`) — required for client-side routing. Without this, direct navigation to `/items` returns a 404.
 - **`/health` endpoint** — returns `{"status":"healthy"}` with `application/json`. Consumed by Docker HEALTHCHECK, Kubernetes probes, and CI smoke tests. `access_log off` prevents health check spam.
 - **Asset caching** — Vite outputs files like `assets/index-abc123.js` with content hashes. Safe to cache forever (`immutable`).
@@ -634,7 +648,7 @@ Key decisions:
 - `*.md` — docs not needed in image
 - `.vscode/`, `.idea/` — editor configs
 
-#### Verification
+### Verification
 ```bash
 # All commands run from repo root
 
@@ -655,7 +669,7 @@ curl -f http://localhost:8080/              # should return index.html
 curl -f http://localhost:8080/health        # should return {"status":"healthy"}
 curl -f http://localhost:8080/items         # should return index.html (SPA fallback)
 # Note: /api/* will return 502 because there is no backend container — this is expected
-# when running the frontend in isolation. The integration test (Step 8) validates the full stack.
+# when running the frontend in isolation. The integration test (Chapter 8) validates the full stack.
 
 # 5. Verify Docker HEALTHCHECK
 docker inspect --format='{{.State.Health.Status}}' test-frontend   # should be "healthy"
@@ -675,9 +689,13 @@ docker rmi template-fullstack-frontend
 
 ---
 
-### Step 5: Docker Compose — Local Development
+## Chapter 5: Docker Compose — Local Development
 
-**What:** Create a `docker-compose.yml` at the repo root that lets developers run the full stack locally with a single command. This is a new chapter — the standalone templates don't have Docker Compose because they are single-service.
+### Type
+build
+
+### What
+Create a `docker-compose.yml` at the repo root that lets developers run the full stack locally with a single command. This is a new chapter — the standalone templates don't have Docker Compose because they are single-service.
 
 **Files:**
 - `docker-compose.yml`
@@ -728,9 +746,9 @@ Key decisions:
 
 - **Service names match Kubernetes:** The backend service is named `backend`, which is the same hostname that `nginx.conf`'s `proxy_pass http://backend:8000/` expects. Docker Compose creates a default network where services resolve each other by name. This means the **same `nginx.conf`** works in both Docker Compose and Kubernetes — no environment-specific config needed.
 
-- **`depends_on` with health condition:** The frontend container waits until the backend reports healthy before starting. This prevents nginx from returning 502 errors on `/api/*` during startup. The backend's HEALTHCHECK (defined in its Dockerfile, Step 3) is what Docker Compose monitors.
+- **`depends_on` with health condition:** The frontend container waits until the backend reports healthy before starting. This prevents nginx from returning 502 errors on `/api/*` during startup. The backend's HEALTHCHECK (defined in its Dockerfile, Chapter 3) is what Docker Compose monitors.
 
-- **Production Dockerfiles, not dev overrides:** The compose file builds using the production Dockerfiles. This is intentional — it validates that the same images that CI builds and Helm deploys work correctly together. For developers who want hot reload during active development, the README (Step 14) documents the alternative: run `uvicorn --reload` and `pnpm dev` natively, without Docker.
+- **Production Dockerfiles, not dev overrides:** The compose file builds using the production Dockerfiles. This is intentional — it validates that the same images that CI builds and Helm deploys work correctly together. For developers who want hot reload during active development, the README (Chapter 14) documents the alternative: run `uvicorn --reload` and `pnpm dev` natively, without Docker.
 
 - **No volume mounts for source code:** Volume mounts (e.g., `./backend/src:/app/src`) would enable hot reload inside containers, but they introduce platform-specific issues (file watching on macOS/Windows via Docker Desktop is slow and unreliable, especially for large `node_modules`). The compose file stays simple and production-like. Developers who want fast iteration use native tools directly.
 
@@ -738,7 +756,7 @@ Key decisions:
 
 - **Ports:** Backend on `8000` (same as standalone), frontend on `8080` (same as the nginx container). Both are accessible from the host for debugging.
 
-#### Verification
+### Verification
 ```bash
 # All commands run from repo root
 
@@ -772,9 +790,13 @@ docker compose down --rmi local
 
 ---
 
-### Step 6: Helm Chart
+## Chapter 6: Helm Chart
 
-**What:** Create a production-ready, hardened Helm chart in `helm-chart/` that deploys both the backend and frontend as a coordinated stack on Kubernetes. This is the most substantial chapter in the plan and the primary reason this template exists as a separate project from the two standalone templates.
+### Type
+feat
+
+### What
+Create a production-ready, hardened Helm chart in `helm-chart/` that deploys both the backend and frontend as a coordinated stack on Kubernetes. This is the most substantial chapter in the plan and the primary reason this template exists as a separate project from the two standalone templates.
 
 The chart must be **hardened from day one**: security contexts, non-root enforcement, dedicated service accounts, startup probes, no `latest` tag, and explicit documentation of what's omitted.
 
@@ -933,7 +955,7 @@ spec:
 ```
 
 Key points:
-- **`securityContext` at pod level:** `runAsNonRoot: true` + `runAsUser: 1000` + `fsGroup: 1000`. Kubernetes will refuse to start the pod if the container image's default user is root. This pairs with the `USER appuser` (UID 1000) in the backend Dockerfile (Step 3).
+- **`securityContext` at pod level:** `runAsNonRoot: true` + `runAsUser: 1000` + `fsGroup: 1000`. Kubernetes will refuse to start the pod if the container image's default user is root. This pairs with the `USER appuser` (UID 1000) in the backend Dockerfile (Chapter 3).
 - **`securityContext` at container level:** `allowPrivilegeEscalation: false` + `readOnlyRootFilesystem: true` + `capabilities.drop: [ALL]`. This is the Principle of Least Privilege in practice — the container cannot gain additional privileges, cannot write to its filesystem (only to mounted volumes if any), and has zero Linux capabilities.
 - **`startupProbe`:** Allows the container up to 300 seconds (30 × 10s) to start before Kubernetes considers it failed. This is critical for applications with slow warmup (e.g., ML model loading). Without `startupProbe`, `livenessProbe` would kill the pod during warmup.
 - **`livenessProbe` vs `readinessProbe`:** Liveness checks if the process is alive (restart if not). Readiness checks if it can serve traffic (remove from Service endpoints if not). Both hit `/health` but have different failure consequences.
@@ -946,7 +968,7 @@ Key points:
 **`templates/frontend-deployment.yaml`:**
 
 Same structure as the backend deployment, with these differences:
-- **`runAsUser: 101`** (nginx user UID on Alpine, matching the `USER nginx` in the frontend Dockerfile, Step 4)
+- **`runAsUser: 101`** (nginx user UID on Alpine, matching the `USER nginx` in the frontend Dockerfile, Chapter 4)
 - **`fsGroup: 101`**
 - **`containerPort: 8080`** (nginx's unprivileged port)
 - **`readOnlyRootFilesystem: true`** with an `emptyDir` volume mounted at `/tmp` — nginx needs to write its pid file and temporary files to `/tmp`. The `emptyDir` is ephemeral and lives in memory, satisfying the read-only requirement while letting nginx function.
@@ -963,7 +985,7 @@ Same structure as the backend deployment, with these differences:
               mountPath: /tmp
 ```
 
-**Why the `/tmp` volume:** `readOnlyRootFilesystem: true` means the container cannot write anywhere except explicitly mounted volumes. nginx writes its pid to `/tmp/nginx.pid` (configured in Step 4's nginx.conf for non-root operation). Without this mount, nginx fails to start. The `emptyDir` is backed by the node's tmpfs — it's fast, ephemeral, and doesn't persist across pod restarts.
+**Why the `/tmp` volume:** `readOnlyRootFilesystem: true` means the container cannot write anywhere except explicitly mounted volumes. nginx writes its pid to `/tmp/nginx.pid` (configured in Chapter 4's nginx.conf for non-root operation). Without this mount, nginx fails to start. The `emptyDir` is backed by the node's tmpfs — it's fast, ephemeral, and doesn't persist across pod restarts.
 
 ---
 
@@ -1065,7 +1087,7 @@ Approach (a) is recommended for simplicity. The Dockerfile's CMD becomes:
 CMD ["/bin/sh", "-c", "envsubst '${BACKEND_URL}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
 ```
 
-And the nginx.conf (Step 4) changes `proxy_pass http://backend:8000/` to `proxy_pass ${BACKEND_URL}/`.
+And the nginx.conf (Chapter 4) changes `proxy_pass http://backend:8000/` to `proxy_pass ${BACKEND_URL}/`.
 
 ---
 
@@ -1090,7 +1112,7 @@ helm upgrade myapp ./helm-chart \
   --set frontend.image.tag=abc123def
 ```
 
-This is what the CI pipeline (Step 8) produces — images tagged with the commit SHA. Every running pod traces back to an exact commit.
+This is what the CI pipeline (Chapter 8) produces — images tagged with the commit SHA. Every running pod traces back to an exact commit.
 
 ---
 
@@ -1140,7 +1162,7 @@ Each workload gets its own ServiceAccount with `automountServiceAccountToken: fa
 
 #### 6j. What's intentionally omitted
 
-The following resources are **not included** in the chart. Each omission is a conscious decision, not an oversight. The chart README and the main README (Step 14) document each one so downstream users know what to add for their environment.
+The following resources are **not included** in the chart. Each omission is a conscious decision, not an oversight. The chart README and the main README (Chapter 14) document each one so downstream users know what to add for their environment.
 
 | Resource | Why it's omitted | When to add it |
 | --- | --- | --- |
@@ -1181,7 +1203,7 @@ Post-install instructions printed by `helm install`. Shows:
 
 ---
 
-#### Verification
+### Verification
 ```bash
 # 1. Lint the chart
 helm lint helm-chart/
@@ -1218,9 +1240,13 @@ helm install myapp helm-chart/ --dry-run --debug
 
 ---
 
-### Step 7: Pre-commit Hooks
+## Chapter 7: Pre-commit Hooks
 
-**What:** Create a single `.pre-commit-config.yaml` at the repo root that orchestrates hooks for both stacks, Dockerfiles, and the Helm chart. This is the combined version of the hooks from both standalone templates, plus Helm-specific and monorepo-specific additions.
+### Type
+chore
+
+### What
+Create a single `.pre-commit-config.yaml` at the repo root that orchestrates hooks for both stacks, Dockerfiles, and the Helm chart. This is the combined version of the hooks from both standalone templates, plus Helm-specific and monorepo-specific additions.
 
 **Files:**
 - `.pre-commit-config.yaml`
@@ -1347,7 +1373,7 @@ pre-commit install
 pre-commit install --hook-type commit-msg
 ```
 
-#### Verification
+### Verification
 ```bash
 # 1. Install pre-commit and git hooks
 pre-commit install
@@ -1392,9 +1418,13 @@ rm test-secret.txt
 
 ---
 
-### Step 8: CI Pipeline (`.github/workflows/ci.yml`)
+## Chapter 8: CI Pipeline (`.github/workflows/ci.yml`)
 
-**What:** The core of the template. A GitHub Actions pipeline at the root level with **7 jobs** covering both services, security scanning, Helm validation, integration testing, and registry push. This is the most complex pipeline of the three templates — a monorepo with two services and a Helm chart requires more coordination than a single-service pipeline.
+### Type
+ci
+
+### What
+The core of the template. A GitHub Actions pipeline at the root level with **7 jobs** covering both services, security scanning, Helm validation, integration testing, and registry push. This is the most complex pipeline of the three templates — a monorepo with two services and a Helm chart requires more coordination than a single-service pipeline.
 
 **Critical:** The workflow file must live at `.github/workflows/ci.yml` in the root of the repo. GitHub Actions only discovers workflows in `.github/workflows/` at the root — files placed elsewhere are invisible to the runner.
 
@@ -1576,7 +1606,7 @@ Jobs 1 and 2 (`backend-quality`, `frontend-quality`) run **in parallel** — the
 
 **`act` compatibility:** Under `act`, the `build` job loads images into the Docker daemon. Since `act` runs inside Docker itself, the `integration-test` job can access those same images — Docker-in-Docker shares the daemon (when using socket mount, which is `act`'s default). The only difference is that artifact download/upload is skipped; images are already present. The compose file and integration tests run identically.
 
-**Compose file for CI:** The same `docker-compose.yml` from Step 5 is used. The CI overrides image names to point at the SHA-tagged builds:
+**Compose file for CI:** The same `docker-compose.yml` from Chapter 5 is used. The CI overrides image names to point at the SHA-tagged builds:
 ```bash
 BACKEND_IMAGE=${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }} \
 FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE_NAME }}:${{ github.sha }} \
@@ -1601,7 +1631,7 @@ This requires the `docker-compose.yml` to use `image:` fields with variable inte
 
 **Push exactly what was scanned:** The `build` job saves both images as tar artifacts after Trivy scanning and smoke testing. The `push` job loads and re-tags those exact bytes. No rebuild. The images going to the registry are guaranteed identical to what was scanned and integration-tested.
 
-**Registry-agnostic design:** Same secret names as both standalone templates: `REGISTRY_USERNAME`, `REGISTRY_TOKEN`, `REGISTRY_URL`. The README (Step 14) documents configuration for Docker Hub, ghcr.io, AWS ECR (OIDC), ACR, and Harbor/Nexus/Artifactory.
+**Registry-agnostic design:** Same secret names as both standalone templates: `REGISTRY_USERNAME`, `REGISTRY_TOKEN`, `REGISTRY_URL`. The README (Chapter 14) documents configuration for Docker Hub, ghcr.io, AWS ECR (OIDC), ACR, and Harbor/Nexus/Artifactory.
 
 ---
 
@@ -1662,7 +1692,7 @@ act push --container-architecture linux/amd64 --secret-file .secrets
 | Coverage artifact uploads | Yes | Skipped |
 | Registry push | Yes (main only) | Skipped |
 
-#### Verification
+### Verification
 ```bash
 # Run specific jobs locally with act:
 
@@ -1690,9 +1720,13 @@ act push --container-architecture linux/amd64 --secret-file .secrets
 
 ---
 
-### Step 9: First GitHub Run (GHCR)
+## Chapter 9: First GitHub Run (GHCR)
 
-**What:** Push the pipeline to GitHub, verify all jobs pass on a PR, and validate the `push` job on `main`. This step covers GitHub-specific setup only — the pipeline has already been verified locally with `act` (Step 8).
+### Type
+ci
+
+### What
+Push the pipeline to GitHub, verify all jobs pass on a PR, and validate the `push` job on `main`. This chapter covers GitHub-specific setup only — the pipeline has already been verified locally with `act` (Chapter 8).
 
 **Pre-requisite:** The pipeline has been verified locally with `act`. At minimum, `act -j backend-quality`, `act -j frontend-quality`, `act -j build`, and `act -j integration-test` must have run green.
 
@@ -1763,13 +1797,35 @@ This checklist must be completed for every first run — no green run, no merge:
 - [ ] **Integration test logs** — open the integration-test job, verify the full round-trip (POST → GET) succeeded
 - [ ] **Security tab** — SARIF uploads present under Security → Code scanning for both Hadolint and Trivy
 
+### Verification
+```bash
+# Push branch and open PR
+git push -u origin <your-branch>
+gh pr create --base main --head <your-branch> --title "CI pipeline" --body "Verify CI."
+
+# Watch PR checks (jobs 1-6 should pass, push job skipped)
+gh pr checks --watch
+
+# After merge to main, watch full run including push job
+gh run watch
+```
+
+Manually verify:
+- Both images appear at github.com → Packages
+- SARIF uploads present under Security → Code scanning (Hadolint + Trivy)
+- Complete the post-run checklist (9f) above
+
 ---
 
-### Step 10: Branch Protection on `main`
+## Chapter 10: Branch Protection on `main`
 
-**What:** Configure GitHub branch protection rules on `main` so direct pushes are blocked and every change goes through a PR with green CI.
+### Type
+chore
 
-**When to apply:** After Step 9's first GitHub run has **completed green**. GitHub's "Require status checks to pass before merging" dropdown is populated from historical workflow runs — a check that has never executed is not selectable by name. Configuring protection before the first run means either the dropdown is empty or you save the rule with no checks selected and protection is a no-op. The correct order is always: push → first run completes green → configure protection and select the now-visible check names.
+### What
+Configure GitHub branch protection rules on `main` so direct pushes are blocked and every change goes through a PR with green CI.
+
+**When to apply:** After Chapter 9's first GitHub run has **completed green**. GitHub's "Require status checks to pass before merging" dropdown is populated from historical workflow runs — a check that has never executed is not selectable by name. Configuring protection before the first run means either the dropdown is empty or you save the rule with no checks selected and protection is a no-op. The correct order is always: push → first run completes green → configure protection and select the now-visible check names.
 
 **Rules to configure** (Settings → Branches → Add branch protection rule → Branch name pattern: `main`):
 
@@ -1785,11 +1841,11 @@ This checklist must be completed for every first run — no green run, no merge:
 
 **Applies to two places:**
 - This template repo itself — configure once as part of shipping the template.
-- Every new repo created from this template — GitHub does **not** carry branch protection rules across template copies. The README (Step 14) must document this as a mandatory post-bootstrap step for downstream users.
+- Every new repo created from this template — GitHub does **not** carry branch protection rules across template copies. The README (Chapter 14) must document this as a mandatory post-bootstrap step for downstream users.
 
 **Optional automation (out of scope for v1):** These rules can be codified via `gh api repos/:owner/:repo/branches/main/protection` calls or the Terraform `integrations/github` provider so they're reproducible across repos created from this template.
 
-#### Verification
+### Verification
 ```bash
 # 1. Direct push to main must be rejected
 git checkout main
@@ -1810,9 +1866,13 @@ git push --force origin main
 
 ---
 
-### Step 11: Git Submodule for Internal Docs
+## Chapter 11: Git Submodule for Internal Docs
 
-**What:** Add a git submodule pointing to a private repository for internal documentation. Identical to the approach in both standalone templates.
+### Type
+chore
+
+### What
+Add a git submodule pointing to a private repository for internal documentation. Identical to the approach in both standalone templates.
 
 **Requirements:**
 - Submodule target: `https://github.com/<org>/docs-internal.git`
@@ -1855,11 +1915,23 @@ git push --force origin main
 - That `git clone` alone does NOT fetch submodule content — you need `git clone --recurse-submodules` or `git submodule update --init` after cloning
 - How to replace the template's submodule with your own team's docs repo
 
+### Verification
+```bash
+# Verify submodule is registered
+test -f .gitmodules && echo "OK: .gitmodules exists"
+test -d docs-internal/ && echo "OK: docs-internal/ directory exists"
+git submodule status
+```
+
 ---
 
-### Step 12: Dependabot Configuration
+## Chapter 12: Dependabot Configuration
 
-**What:** Create `.github/dependabot.yml` for automated dependency updates across all four dependency ecosystems in the monorepo.
+### Type
+ci
+
+### What
+Create `.github/dependabot.yml` for automated dependency updates across all four dependency ecosystems in the monorepo.
 
 **File:** `.github/dependabot.yml`
 
@@ -1915,11 +1987,22 @@ updates:
 
 **Why this matters:** All external dependencies in this template are pinned (Docker image digests, Python/Node package versions, GitHub Action versions). Pinning prevents silent changes but creates a maintenance burden — without automation, pinned versions rot. Dependabot closes the loop: it watches upstream for new versions and opens PRs with the bump. The CI pipeline validates the bump. A human reviews and merges. Dependencies stay current without manual version-chasing.
 
+### Verification
+```bash
+# Verify file exists and is valid YAML
+test -f .github/dependabot.yml && echo "OK: dependabot.yml exists"
+python3 -c "import yaml; yaml.safe_load(open('.github/dependabot.yml'))" && echo "OK: valid YAML"
+```
+
 ---
 
-### Step 13: PR Template & CODEOWNERS
+## Chapter 13: PR Template & CODEOWNERS
 
-**What:** Create `.github/pull_request_template.md` and `.github/CODEOWNERS`.
+### Type
+chore
+
+### What
+Create `.github/pull_request_template.md` and `.github/CODEOWNERS`.
 
 #### PR Template (`.github/pull_request_template.md`)
 
@@ -1955,7 +2038,7 @@ Steps to verify locally or link to the green CI run.
 
 **Template default:** A single catch-all rule assigning the repo owner as default reviewer. Downstream repos should customize with path-specific rules for their team structure.
 
-**Requires:** Branch protection rule "Require review from Code Owners" enabled on `main` (Step 10) for CODEOWNERS to be enforced, not just suggested.
+**Requires:** Branch protection rule "Require review from Code Owners" enabled on `main` (Chapter 10) for CODEOWNERS to be enforced, not just suggested.
 
 **Example path-based rules (for downstream customization):**
 ```
@@ -1983,11 +2066,22 @@ frontend/package.json       @org/frontend
 
 **Why granular path ownership matters in a fullstack monorepo:** Unlike single-service repos, a fullstack monorepo has distinct areas of expertise. A frontend developer changing `frontend/src/pages/Items/Items.tsx` shouldn't need a DevOps review. A DevOps engineer changing `helm-chart/values.yaml` shouldn't need a frontend review. CODEOWNERS routes PRs to the right people automatically. The catch-all `*` rule ensures nothing slips through without at least one reviewer.
 
+### Verification
+```bash
+# Verify files exist
+test -f .github/pull_request_template.md && echo "OK: PR template exists"
+test -f .github/CODEOWNERS && echo "OK: CODEOWNERS exists"
+```
+
 ---
 
-### Step 14: README.md
+## Chapter 14: README.md
 
-**What:** Comprehensive template documentation. The README is the entry point for anyone using this template — a colleague, a client, or yourself in six months. It must answer "what does this do, when should I use it, and how do I get started" without requiring someone to read the PLAN.md or the source code.
+### Type
+docs
+
+### What
+Comprehensive template documentation. The README is the entry point for anyone using this template — a colleague, a client, or yourself in six months. It must answer "what does this do, when should I use it, and how do I get started" without requiring someone to read the PLAN.md or the source code.
 
 **Required sections:**
 
@@ -2037,7 +2131,7 @@ Overview table of all components: FastAPI backend, React + Vite frontend, two Do
 
 #### 4. Branch protection on `main`
 
-Required rules to configure, why it must be applied to every repo created from this template (GitHub does not carry protection rules across template copies), and why it must be done **after** the first green CI run (check names are only selectable once the workflow has executed at least once). Table of rules matching Step 10.
+Required rules to configure, why it must be applied to every repo created from this template (GitHub does not carry protection rules across template copies), and why it must be done **after** the first green CI run (check names are only selectable once the workflow has executed at least once). Table of rules matching Chapter 10.
 
 #### 5. How to customize
 
@@ -2072,7 +2166,7 @@ Note on image tags: commit SHA only, no `latest`, with rationale.
 - How to deploy: `helm install myapp helm-chart/` and `helm upgrade` with image tag overrides
 - How to customize values: `--set` flags, custom `values-<env>.yaml` files
 - What's included: Deployments, Services, ServiceAccounts, ConfigMap, probes, security contexts, resource limits
-- What's intentionally omitted: table from Step 6j (Ingress, NetworkPolicy, HPA, PVC, TLS, PDB) with guidance on when to add each
+- What's intentionally omitted: table from Chapter 6j (Ingress, NetworkPolicy, HPA, PVC, TLS, PDB) with guidance on when to add each
 - Security hardening: brief summary of securityContext, non-root, `automountServiceAccountToken: false`, PSA `restricted` compliance
 - How to verify: `helm lint`, `helm template`, `helm install --dry-run`
 
@@ -2137,28 +2231,35 @@ Full table of hooks (9 hooks across both stacks). Note that `pre-commit` is a Py
 | **No `tag: latest`** | Traceability. Every running pod maps to an exact commit SHA. |
 | **Surgical `act` skip logic** | Step-level, not job-level. Everything that validates the artifact runs locally. Only external side effects are skipped. |
 
+### Verification
+```bash
+# Verify README exists and has content
+test -f README.md && echo "OK: README.md exists"
+test -s README.md && echo "OK: README.md is not empty"
+```
+
 ---
 
 ## Implementation Order
 
-| # | Step | Depends on | Key files |
-|---|------|-----------|-----------|
+| # | Chapter | Depends on | Key files |
+|---|---------|-----------|-----------|
 | 1 | Backend scaffolding | — | `backend/` (pyproject.toml, src/, tests/) — 7 files |
 | 2 | Frontend scaffolding | — | `frontend/` (package.json, biome.json, tsconfig, vite config, src/, tests/) — 25+ files |
-| 3 | Backend Dockerfile | Step 1 | `backend/Dockerfile`, `backend/.dockerignore` |
-| 4 | Frontend Dockerfile | Step 2 | `frontend/Dockerfile`, `frontend/.dockerignore`, `frontend/nginx.conf` |
-| 5 | Docker Compose | Steps 3, 4 | `docker-compose.yml` |
-| 6 | Helm chart | Steps 3, 4 | `helm-chart/` — 12 files |
-| 7 | Pre-commit hooks | Steps 1, 2 | `.pre-commit-config.yaml` |
-| 8 | CI pipeline | Steps 1–6 | `.github/workflows/ci.yml`, `.trivyignore` |
-| 9 | First GitHub run | Step 8 (act green locally) | — (GitHub settings + secrets) |
-| 10 | Branch protection | Step 9 (first green run on GitHub) | — (GitHub settings) |
+| 3 | Backend Dockerfile | Chapter 1 | `backend/Dockerfile`, `backend/.dockerignore` |
+| 4 | Frontend Dockerfile | Chapter 2 | `frontend/Dockerfile`, `frontend/.dockerignore`, `frontend/nginx.conf` |
+| 5 | Docker Compose | Chapters 3, 4 | `docker-compose.yml` |
+| 6 | Helm chart | Chapters 3, 4 | `helm-chart/` — 12 files |
+| 7 | Pre-commit hooks | Chapters 1, 2 | `.pre-commit-config.yaml` |
+| 8 | CI pipeline | Chapters 1–6 | `.github/workflows/ci.yml`, `.trivyignore` |
+| 9 | First GitHub run | Chapter 8 (act green locally) | — (GitHub settings + secrets) |
+| 10 | Branch protection | Chapter 9 (first green run on GitHub) | — (GitHub settings) |
 | 11 | Git submodule | — | `.gitmodules`, `docs-internal/` |
-| 12 | Dependabot config | Steps 3, 4, 8 | `.github/dependabot.yml` |
+| 12 | Dependabot config | Chapters 3, 4, 8 | `.github/dependabot.yml` |
 | 13 | PR template & CODEOWNERS | — | `.github/pull_request_template.md`, `.github/CODEOWNERS` |
 | 14 | README.md | All above | `README.md` |
 
-**Steps 1 and 2 can be done in parallel** — they have no dependency on each other. Steps 11, 12, and 13 can also be done at any time.
+**Chapters 1 and 2 can be done in parallel** — they have no dependency on each other. Chapters 11, 12, and 13 can also be done at any time.
 
 **After all files are created:**
 1. Run `cd backend && uv sync` to generate `uv.lock`
@@ -2172,9 +2273,9 @@ Full table of hooks (9 hooks across both stacks). Note that `pre-commit` is a Py
 9. Run `act -j backend-quality --secret-file .secrets` to verify pipeline runs locally
 10. Run `act -j build --secret-file .secrets --pull=false` to verify Docker build + scan + smoke test
 11. Run `act -j integration-test --secret-file .secrets --pull=false` to verify integration test
-12. Configure GHCR secrets/variables and push to GitHub (Step 9)
+12. Configure GHCR secrets/variables and push to GitHub (Chapter 9)
 13. Verify pipeline runs green on PR, then merge and verify the `push` job on `main`
-14. Configure branch protection on `main` (Step 10) — check names are now visible in the "Require status checks" dropdown because the first run has populated them
+14. Configure branch protection on `main` (Chapter 10) — check names are now visible in the "Require status checks" dropdown because the first run has populated them
 15. Include link to green run in the delivery
 
 ---
