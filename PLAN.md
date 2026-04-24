@@ -212,6 +212,16 @@ Must go beyond a hello-world. It must demonstrate:
 
 ### Verification
 ```bash
+cd backend
+uv sync --all-extras
+uv run ruff format --check .
+uv run ruff check .
+uv run mypy src/
+uv run pytest --cov=src --cov-report=term --cov-fail-under=80
+```
+
+### Human Verification
+```bash
 # All commands run from backend/
 
 # 1. Install dependencies
@@ -419,6 +429,18 @@ All tests use `@testing-library/react` + `@testing-library/user-event`. Componen
 
 ### Verification
 ```bash
+cd frontend
+pnpm install
+pnpm format:check
+pnpm check
+pnpm typecheck
+pnpm test:coverage
+pnpm build
+test -f dist/index.html
+```
+
+### Human Verification
+```bash
 # All commands run from frontend/
 
 # 1. Install dependencies
@@ -497,6 +519,18 @@ Create a production-ready, hardened Dockerfile for the backend inside `backend/`
 **Note on OS vulnerabilities:** `apt-get upgrade` patches CVEs but breaks reproducibility (same Dockerfile produces different images over time, defeating digest pinning). Preferred approach: let Dependabot bump the base image digest via PR.
 
 ### Verification
+```bash
+docker build -t template-fullstack-backend backend/
+docker run -d --name test-backend -p 8000:8000 template-fullstack-backend
+sleep 5
+curl -f http://localhost:8000/health
+curl -f -X POST localhost:8000/items -H 'Content-Type: application/json' -d '{"name":"test","price":9.99}'
+curl -f localhost:8000/items/1
+docker stop test-backend && docker rm test-backend
+docker rmi template-fullstack-backend
+```
+
+### Human Verification
 ```bash
 # All commands run from repo root
 
@@ -650,6 +684,18 @@ Key decisions:
 
 ### Verification
 ```bash
+docker build -t template-fullstack-frontend frontend/
+docker run -d --name test-frontend -p 8080:8080 template-fullstack-frontend
+sleep 5
+curl -f http://localhost:8080/
+curl -f http://localhost:8080/health
+curl -f http://localhost:8080/items
+docker stop test-frontend && docker rm test-frontend
+docker rmi template-fullstack-frontend
+```
+
+### Human Verification
+```bash
 # All commands run from repo root
 
 # 1. Build the image
@@ -669,7 +715,6 @@ curl -f http://localhost:8080/              # should return index.html
 curl -f http://localhost:8080/health        # should return {"status":"healthy"}
 curl -f http://localhost:8080/items         # should return index.html (SPA fallback)
 # Note: /api/* will return 502 because there is no backend container — this is expected
-# when running the frontend in isolation. The integration test (Chapter 8) validates the full stack.
 
 # 5. Verify Docker HEALTHCHECK
 docker inspect --format='{{.State.Health.Status}}' test-frontend   # should be "healthy"
@@ -680,7 +725,6 @@ docker run --rm template-fullstack-frontend ls /usr/share/nginx/html/
 
 # 7. Verify security headers
 curl -I http://localhost:8080/ | grep -E "X-Frame|X-Content-Type|Referrer"
-# Should show all three headers
 
 # 8. Cleanup
 docker stop test-frontend && docker rm test-frontend
@@ -757,6 +801,19 @@ Key decisions:
 - **Ports:** Backend on `8000` (same as standalone), frontend on `8080` (same as the nginx container). Both are accessible from the host for debugging.
 
 ### Verification
+```bash
+docker compose up --build -d
+sleep 15
+curl -f http://localhost:8000/health
+curl -f http://localhost:8080/health
+curl -f http://localhost:8080/
+curl -f -X POST http://localhost:8080/api/items -H 'Content-Type: application/json' -d '{"name":"compose-test","price":19.99}'
+curl -f http://localhost:8080/api/items/1
+curl -f http://localhost:8080/items
+docker compose down --rmi local
+```
+
+### Human Verification
 ```bash
 # All commands run from repo root
 
@@ -1205,6 +1262,13 @@ Post-install instructions printed by `helm install`. Shows:
 
 ### Verification
 ```bash
+helm lint helm-chart/
+helm template myapp helm-chart/
+helm template myapp helm-chart/ --set backend.image.tag=abc123 --set frontend.image.tag=abc123
+```
+
+### Human Verification
+```bash
 # 1. Lint the chart
 helm lint helm-chart/
 
@@ -1224,18 +1288,16 @@ helm install myapp helm-chart/ --dry-run --debug
 # Verify: no errors, all resources render correctly
 
 # 5. Verify Pod Security Standards compliance
-# The rendered manifests should pass a policy check for the "restricted" profile.
 # If you have kubectl with PSA enabled:
 # kubectl label namespace default pod-security.kubernetes.io/enforce=restricted
 # helm install myapp helm-chart/
-# Pods should start without PSA rejection.
 
 # 6. Full install on a local cluster (optional, requires minikube/kind)
 # helm install myapp helm-chart/
-# kubectl get pods -w  # wait for Running + Ready
+# kubectl get pods -w
 # kubectl port-forward svc/<release>-frontend 8080:8080
 # curl http://localhost:8080/health
-# curl http://localhost:8080/api/items  # proxied to backend
+# curl http://localhost:8080/api/items
 ```
 
 ---
@@ -1375,23 +1437,25 @@ pre-commit install --hook-type commit-msg
 
 ### Verification
 ```bash
+pre-commit install
+pre-commit install --hook-type commit-msg
+pre-commit run --all-files
+```
+
+### Human Verification
+```bash
 # 1. Install pre-commit and git hooks
 pre-commit install
 pre-commit install --hook-type commit-msg
 
 # 2. Run all hooks against existing files
 pre-commit run --all-files
-# All hooks should pass. On first run, pre-commit downloads and installs
-# each hook's environment — this is normal and only happens once.
 
 # 3. Verify backend hooks only run on backend files
-# Touch a backend file, stage it, run:
 pre-commit run ruff --files backend/src/main.py
-# Should run ruff on the file
 
 # 4. Verify frontend hooks only run on frontend files
 pre-commit run biome-check --files frontend/src/App.tsx
-# Should run biome on the file
 
 # 5. Verify Hadolint runs on Dockerfiles
 pre-commit run hadolint-docker --files backend/Dockerfile
@@ -1408,8 +1472,7 @@ git commit --allow-empty -m "chore: test conventional commits hook"
 git reset HEAD~1
 
 # 8. Verify gitleaks catches secrets
-echo 'GITHUB_TOKEN=ghp_1234567890abcdef1234567890abcdef12345678' > /tmp/test-secret.txt
-cp /tmp/test-secret.txt test-secret.txt
+echo 'GITHUB_TOKEN=ghp_1234567890abcdef1234567890abcdef12345678' > test-secret.txt
 git add test-secret.txt
 pre-commit run gitleaks
 # Expected: blocked by gitleaks
@@ -1694,6 +1757,18 @@ act push --container-architecture linux/amd64 --secret-file .secrets
 
 ### Verification
 ```bash
+test -f .github/workflows/ci.yml
+grep -q 'backend-quality' .github/workflows/ci.yml
+grep -q 'frontend-quality' .github/workflows/ci.yml
+grep -q 'dockerfile-security' .github/workflows/ci.yml
+grep -q 'helm-lint' .github/workflows/ci.yml
+grep -q 'build' .github/workflows/ci.yml
+grep -q 'integration-test' .github/workflows/ci.yml
+grep -q 'push' .github/workflows/ci.yml
+```
+
+### Human Verification
+```bash
 # Run specific jobs locally with act:
 
 # Backend quality only
@@ -1799,6 +1874,11 @@ This checklist must be completed for every first run — no green run, no merge:
 
 ### Verification
 ```bash
+echo "Chapter 9 is a manual GitHub step — skipped in automated runs"
+```
+
+### Human Verification
+```bash
 # Push branch and open PR
 git push -u origin <your-branch>
 gh pr create --base main --head <your-branch> --title "CI pipeline" --body "Verify CI."
@@ -1846,6 +1926,11 @@ Configure GitHub branch protection rules on `main` so direct pushes are blocked 
 **Optional automation (out of scope for v1):** These rules can be codified via `gh api repos/:owner/:repo/branches/main/protection` calls or the Terraform `integrations/github` provider so they're reproducible across repos created from this template.
 
 ### Verification
+```bash
+echo "Chapter 10 is a manual GitHub step — skipped in automated runs"
+```
+
+### Human Verification
 ```bash
 # 1. Direct push to main must be rejected
 git checkout main
@@ -1916,6 +2001,13 @@ Add a git submodule pointing to a private repository for internal documentation.
 - How to replace the template's submodule with your own team's docs repo
 
 ### Verification
+```bash
+test -f .gitmodules
+test -d docs-internal/
+git submodule status
+```
+
+### Human Verification
 ```bash
 # Verify submodule is registered
 test -f .gitmodules && echo "OK: .gitmodules exists"
@@ -1988,6 +2080,12 @@ updates:
 **Why this matters:** All external dependencies in this template are pinned (Docker image digests, Python/Node package versions, GitHub Action versions). Pinning prevents silent changes but creates a maintenance burden — without automation, pinned versions rot. Dependabot closes the loop: it watches upstream for new versions and opens PRs with the bump. The CI pipeline validates the bump. A human reviews and merges. Dependencies stay current without manual version-chasing.
 
 ### Verification
+```bash
+test -f .github/dependabot.yml
+grep -q 'package-ecosystem' .github/dependabot.yml
+```
+
+### Human Verification
 ```bash
 # Verify file exists and is valid YAML
 test -f .github/dependabot.yml && echo "OK: dependabot.yml exists"
@@ -2067,6 +2165,12 @@ frontend/package.json       @org/frontend
 **Why granular path ownership matters in a fullstack monorepo:** Unlike single-service repos, a fullstack monorepo has distinct areas of expertise. A frontend developer changing `frontend/src/pages/Items/Items.tsx` shouldn't need a DevOps review. A DevOps engineer changing `helm-chart/values.yaml` shouldn't need a frontend review. CODEOWNERS routes PRs to the right people automatically. The catch-all `*` rule ensures nothing slips through without at least one reviewer.
 
 ### Verification
+```bash
+test -f .github/pull_request_template.md
+test -f .github/CODEOWNERS
+```
+
+### Human Verification
 ```bash
 # Verify files exist
 test -f .github/pull_request_template.md && echo "OK: PR template exists"
@@ -2232,6 +2336,12 @@ Full table of hooks (9 hooks across both stacks). Note that `pre-commit` is a Py
 | **Surgical `act` skip logic** | Step-level, not job-level. Everything that validates the artifact runs locally. Only external side effects are skipped. |
 
 ### Verification
+```bash
+test -f README.md
+test -s README.md
+```
+
+### Human Verification
 ```bash
 # Verify README exists and has content
 test -f README.md && echo "OK: README.md exists"
